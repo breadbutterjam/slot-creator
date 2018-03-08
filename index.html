@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Recruitment</title>
+	<script type="text/javascript" src="jQuery.js"></script>
+	<script type="text/javascript" src="script.js"></script>
+	<style type="text/css">
+		#slot-details
+		{
+			padding-top: 10px;
+		}
+
+		.small-input-field
+		{
+			width: 50px;
+		} 
+	</style>
+</head>
+<body onload="onBodyLoad()">
+  Date: <input type="date" id="slot-date"> 
+  <br/>
+  
+  <div id="slot-details">
+  Time per slot: <input class="small-input-field" id="time-per-slot-hour" type="number" name="quantity" min="0" max="2" step="1" value="1"> hours <input class="small-input-field" id="time-per-slot-min" type="number" name="quantity" min="0" max="55" step="15" value="0"> minutes 
+  <br/>
+  Start time: <input id="start-time" type="time">
+  <br/>
+  <input type="button" value="Create Slots" id="btn-create-slots" name="">
+
+  <table>
+  	<thead>
+  		<tr>
+  			<th>From</th>
+  			<th>To</th>
+  			<th>Capacity</th>
+  			<th></th>
+  		</tr>
+  	</thead>
+  	<tbody class="table-body">
+
+  	</tbody>
+
+  </table>
+
+  </div>
+</body>
+</html>
