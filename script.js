@@ -2,10 +2,11 @@ var todaysDate = "2018-03-08";
 
 var defaultData = {};
 defaultData.slotTime = MakeTime(1,0);
-defaultData.numberOfSlots = 5;
+defaultData.numberOfSlots = 3;
 
 // defaultData.startTime = {"hr": 8, "min": 30};
 defaultData.startTime = MakeTime(8,30);
+defaultData.breakTime = MakeTime(1,0);
 
 var mainData;
 
@@ -28,9 +29,17 @@ function CreateSlotsClicked()
 		$("#slot-details").show();		
 		
 		slotTime = MakeTime($("#time-per-slot-hour").val(), $("#time-per-slot-min").val());
-		firstSlotTime = MakeTime(Number($("#start-time").val().split(":")[0]), Number($("#start-time").val().split(":")[1]))
-
-		MakeSlot(firstSlotTime);
+		//firstSlotTime = MakeTime(Number($("#start-time").val().split(":")[0]), Number($("#start-time").val().split(":")[1]))
+		
+		var slotStartTime = MakeTime(Number($("#start-time").val().split(":")[0]), Number($("#start-time").val().split(":")[1]))
+		
+		for (var i=0; i<defaultData.numberOfSlots; i++)
+		{
+			MakeSlot(slotStartTime);
+			slotStartTime = AddTime(AddTime(slotStartTime, slotTime), defaultData.breakTime);
+		}
+		
+		//MakeSlot(firstSlotTime);
 
 			
 	}
@@ -58,6 +67,7 @@ function MakeSlot(startTime)
 	strHTML += '<td><input type="time" class="start-time"></td>' 
 	strHTML += '<td><input type="time" class="end-time"></td>' 
 	strHTML += '<td><input class="small-input-field" type="number" name="quantity" min="0" max="100" step="1" value="50"></td>'
+	strHTML += '<td><input type="button" value="Remove"></td>'
 	strHTML += '</tr>'
 	$('.table-body').append(strHTML);
 
