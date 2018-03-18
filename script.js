@@ -14,6 +14,40 @@ var slotTime;
 var firstSlotTime;
 var numSlots;
 
+
+// ~~~~~~~~~~~~~~~~~~~~ DB Start ~~~~~~~~~~~~~~~~~~~~
+var db = {};
+db.tblWalkin = [];
+db.tblSlotDetails = [];
+db.tblSlotDetailsApplicantDetails = [];
+
+var walkinTemplate = {};
+walkinTemplate["ID"] = "";
+walkinTemplate["Date"] = "";
+walkinTemplate["URL"] = "";
+
+var slotDetailsTemplate = {};
+slotDetailsTemplate["ID"] = "";
+slotDetailsTemplate["WalkinID"] = "";
+slotDetailsTemplate["StartTime"] = "";
+slotDetailsTemplate["EndTime"] = "";
+slotDetailsTemplate["Capacity"] = "";
+slotDetailsTemplate["Remaining"] = "";
+slotDetailsTemplate["name"] = "";
+
+/*
+
+ApplicantDetails
+-
+WalkinID int FK >- Walkin.WalkinID
+FName string
+LName string
+Email string
+Mobile string
+SlotID int FK >- SlotDetails.SlotID */
+
+// ~~~~~~~~~~~~~~~~~~~~ DB End ~~~~~~~~~~~~~~~~~~~~
+
 function onBodyLoad()
 {
 	$("#btn-create-slots").on("click", CreateSlotsClicked);
@@ -40,9 +74,96 @@ function CreateSlotsClicked()
 		}
 		
 		//MakeSlot(firstSlotTime);
+		$("#slot-details").append('<input type="button" value="Add Another Slot" id="AddAnotherSlot">');	
 
-			
+		AddEventListeners();
+		
+		
 	}
+}
+
+function AddEventListeners()
+{
+	$('.start-time').on("change", StartTimeChanged)
+	$('.end-time').on("change", endTimeChanged);
+
+	$('.remove-slot').on("click", RemoveSlot)
+
+	$("#AddAnotherSlot").on("click", AddAnotherSlot)
+}
+
+function RemoveSlot(params) 
+{
+	var rowElem =$($(event.currentTarget).parent()).parent();
+	rowElem.remove();	
+}
+
+function AddAnotherSlot(event)
+{
+	var inputElemEndTimeLastSlot = $($('.end-time')[$('.end-time').length-1]);
+	var lastSlotEndTimeHour = inputElemEndTimeLastSlot.val().split(":")[0];
+	var lastSlotEndTimeMin = inputElemEndTimeLastSlot.val().split(":")[1];
+
+	var oStartTimeNewSlot = AddTime(MakeTime(lastSlotEndTimeHour, lastSlotEndTimeMin), slotTime);
+	MakeSlot(oStartTimeNewSlot);
+}
+
+function endTimeChanged(event)
+{
+	// console.log("a")
+	var inputElemEndTime = $(event.currentTarget);
+	var endTime = inputElemEndTime.val();
+	console.log(endTime);
+	var endTimeHour = Number(endTime.split(":")[0]);
+	var endTimeMin = Number(endTime.split(":")[1]);
+
+	var oEndTime = MakeTime(endTimeHour, endTimeMin);
+	
+	var updatedStartTime = SubtractTime(oEndTime, slotTime);
+	var strUpdatedStartTime = GetTimeString(updatedStartTime);
+	
+	var inputElemStartTime = $(inputElemEndTime.parent().parent().find('.start-time')[0]);
+	inputElemStartTime.val(strUpdatedStartTime);
+}
+
+function SubtractTime(oTimeA, oTimeB)
+{
+	var hourA = oTimeA.hr;
+	var minA = oTimeA.min;
+
+	var hourB = oTimeB.hr;
+	var minB = oTimeB.min;
+
+	var resultantHour = hourA - hourB;
+	var resultantMins = minA - minB;
+
+	if (resultantMins < 0)
+	{
+		resultantHour--;
+		resultantMins += 60;
+	}
+
+	var resultantTime = MakeTime(resultantHour, resultantMins)
+
+	return resultantTime;
+}
+
+function StartTimeChanged(event)
+{
+	// console.log(event)
+	var inputElemStartTime = $(event.currentTarget);
+	var startTime = inputElemStartTime.val();
+
+	var startTimeHour = Number(startTime.split(":")[0]);
+	var startTimeMin = Number(startTime.split(":")[1]);
+
+	var oStartTime = MakeTime(startTimeHour, startTimeMin);
+
+	var updatedEndTime = AddTime(oStartTime, slotTime);
+	var strUpdatedEndTime = GetTimeString(updatedEndTime);
+	
+	var inputElemEndTime = $(inputElemStartTime.parent().parent().find('.end-time')[0]);
+	inputElemEndTime.val(strUpdatedEndTime);
 }
 
 function FillDefaults()
@@ -66,8 +187,8 @@ function MakeSlot(startTime)
 	var strHTML = "<tr class='"+ strClassName + "'>";
 	strHTML += '<td><input type="time" class="start-time"></td>' 
 	strHTML += '<td><input type="time" class="end-time"></td>' 
-	strHTML += '<td><input class="small-input-field" type="number" name="quantity" min="0" max="100" step="1" value="50"></td>'
-	strHTML += '<td><input type="button" value="Remove"></td>'
+	strHTML += '<td><input class="small-input-field capacity" type="number" name="quantity" min="0" max="100" step="1" value="50"></td>'
+	strHTML += '<td><input type="button" class="remove-slot" value="Remove"></td>'
 	strHTML += '</tr>'
 	$('.table-body').append(strHTML);
 
@@ -148,6 +269,66 @@ function Init()
 	FillDefaults();
 
 }
+
+function saveToDB()
+{
+	var tblWalkin = JSON.parse(JSON.stringify(walkinTemplate));
+	
+	/* TODO:: update code to have walkin ID generated */
+	tblWalkin.ID = 1;
+	tblWalkin.Date = $("#slot-date").val();
+	tblWalkin.URL = "abc";
+	db.tblWalkin[String(tblWalkin.ID).trim()] = tblWalkin;
+	
+	
+	var tblSlotDetails = JSON.parse(JSON.stringify(slotDetailsTemplate));
+	
+
+}
+
+
+function addSlotDetails(walkinID)
+{
+	var slotRows = $(".table-body").children();
+	var numSlots = slotRows.length;
+
+	var ret = {};
+	var currentSlotRow;
+	var slotID, startTime, endTime, capacity;
+
+	for (var i=0; i<numSlots; i++)
+	{
+		currentSlotRow = $(slotRows[i]);
+		slotID = currentSlotRow[0].classList.value;
+		startTime = currentSlotRow.find('.start-time').val();
+		endTime = currentSlotRow.find('.end-time').val();
+		capacity = currentSlotRow.find('.capacity').val();
+
+		/* 
+		slotDetailsTemplate["ID"] = "";
+		slotDetailsTemplate["WalkinID"] = "";
+		slotDetailsTemplate["StartTime"] = "";
+		slotDetailsTemplate["EndTime"] = "";
+		slotDetailsTemplate["Capacity"] = "";
+		slotDetailsTemplate["Remaining"] = "";
+		slotDetailsTemplate["name"] = "";
+
+		*/
+
+		slotDetails = JSON.parse(JSON.stringify(slotDetailsTemplate));
+		slotDetails.ID = slotID;
+		slotDetails.WalkinID = walkinID;
+		slotDetails.StartTime = startTime;
+		slotDetails.EndTime = endTime;
+		slotDetails.Capacity = capacity;
+		slotDetails.Remaining = capacity;
+
+		db.tblSlotDetails[slotDetails.ID] = slotDetails;
+
+	}
+
+}
+
 
 function saveMainData()
 {
