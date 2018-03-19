@@ -7,6 +7,7 @@ defaultData.numberOfSlots = 3;
 // defaultData.startTime = {"hr": 8, "min": 30};
 defaultData.startTime = MakeTime(8,30);
 defaultData.breakTime = MakeTime(1,0);
+defaultData.slotCapacity = 190;
 
 var mainData;
 
@@ -75,6 +76,7 @@ function CreateSlotsClicked()
 		
 		//MakeSlot(firstSlotTime);
 		$("#slot-details").append('<input type="button" value="Add Another Slot" id="AddAnotherSlot">');	
+		$("#slot-details").append('<input type="button" value="Save to DB" id="SaveToDB">');
 
 		AddEventListeners();
 		
@@ -90,6 +92,7 @@ function AddEventListeners()
 	$('.remove-slot').on("click", RemoveSlot)
 
 	$("#AddAnotherSlot").on("click", AddAnotherSlot)
+	$("#SaveToDB").on("click", saveToDB)
 }
 
 function RemoveSlot(params) 
@@ -187,7 +190,7 @@ function MakeSlot(startTime)
 	var strHTML = "<tr class='"+ strClassName + "'>";
 	strHTML += '<td><input type="time" class="start-time"></td>' 
 	strHTML += '<td><input type="time" class="end-time"></td>' 
-	strHTML += '<td><input class="small-input-field capacity" type="number" name="quantity" min="0" max="100" step="1" value="50"></td>'
+	strHTML += '<td><input class="small-input-field capacity" type="number" name="quantity" min="0" max="250" step="1" value="'+ String(defaultData.slotCapacity) +'"></td>'
 	strHTML += '<td><input type="button" class="remove-slot" value="Remove"></td>'
 	strHTML += '</tr>'
 	$('.table-body').append(strHTML);
@@ -272,19 +275,18 @@ function Init()
 
 function saveToDB()
 {
-	var tblWalkin = JSON.parse(JSON.stringify(walkinTemplate));
-	
 	/* TODO:: update code to have walkin ID generated */
-	tblWalkin.ID = 1;
-	tblWalkin.Date = $("#slot-date").val();
-	tblWalkin.URL = "abc";
-	db.tblWalkin[String(tblWalkin.ID).trim()] = tblWalkin;
-	
-	
-	var tblSlotDetails = JSON.parse(JSON.stringify(slotDetailsTemplate));
-	
+	var walkinID = selectMaxWalkinIDfromWalkin() + 1;
+	var walkinDate = $("#slot-date").val();
+	var walkinURL = "abc";
 
+	
+	insertIntoWalkin(walkinID, walkinDate, walkinURL)
+	
+	addSlotDetails(walkinID)
 }
+
+
 
 
 function addSlotDetails(walkinID)
@@ -299,36 +301,133 @@ function addSlotDetails(walkinID)
 	for (var i=0; i<numSlots; i++)
 	{
 		currentSlotRow = $(slotRows[i]);
-		slotID = currentSlotRow[0].classList.value;
+		slotID = "walkin-" + String(walkinID).trim() + "-" + currentSlotRow[0].classList.value;
 		startTime = currentSlotRow.find('.start-time').val();
 		endTime = currentSlotRow.find('.end-time').val();
 		capacity = currentSlotRow.find('.capacity').val();
-
-		/* 
-		slotDetailsTemplate["ID"] = "";
-		slotDetailsTemplate["WalkinID"] = "";
-		slotDetailsTemplate["StartTime"] = "";
-		slotDetailsTemplate["EndTime"] = "";
-		slotDetailsTemplate["Capacity"] = "";
-		slotDetailsTemplate["Remaining"] = "";
-		slotDetailsTemplate["name"] = "";
-
-		*/
-
-		slotDetails = JSON.parse(JSON.stringify(slotDetailsTemplate));
-		slotDetails.ID = slotID;
-		slotDetails.WalkinID = walkinID;
-		slotDetails.StartTime = startTime;
-		slotDetails.EndTime = endTime;
-		slotDetails.Capacity = capacity;
-		slotDetails.Remaining = capacity;
-
-		db.tblSlotDetails[slotDetails.ID] = slotDetails;
+	
+		insertIntoSlotDetails(slotID, walkinID, startTime, endTime, capacity, capacity)
 
 	}
 
 }
 
+function insertIntoWalkin(WalkinID, WalkinDate, WalkinURL)
+{
+
+	var tblWalkin = JSON.parse(JSON.stringify(walkinTemplate));
+	
+	tblWalkin.ID = WalkinID;
+	tblWalkin.Date = WalkinDate;
+	tblWalkin.URL = WalkinURL;
+
+	db.tblWalkin[WalkinID] = tblWalkin;
+}
+
+function selectFromWalkinWhereWalkinID(walkinID)
+{
+	var retDataSet;
+	
+	if (walkinID)
+	{
+		if (db.tblWalkin[walkinID])
+		{
+			retDataSet = JSON.parse(JSON.stringify(db.tblWalkin[walkinID]))
+		}
+		else
+		{
+			retDataSet = 0;
+		}
+		
+	}
+	else
+	{
+		retDataSet = 0; 
+	}
+	
+	return retDataSet;
+}
+
+function selectMaxWalkinIDfromWalkin()
+{
+	// debugger;
+	var maxWalkinID = -1;
+	
+	var obj = db.tblWalkin
+	var objKeys = Object.keys(obj);
+	var numKeys = objKeys.length;
+	if (numKeys === 0)
+	{
+		maxWalkinID = 0;
+	}
+	else if (numKeys === 1)
+	{
+		maxWalkinID = obj[objKeys[0]].ID;
+	}
+	else
+	{
+		for (var i=0; i<numKeys; i++)
+		{
+			if (obj[objKeys[i]].ID > maxWalkinID)
+			{
+				maxWalkinID = obj[objKeys[i]].ID
+			}
+		}
+	}
+	
+
+	return maxWalkinID;
+}
+
+function selectFromWalkinWhereDate(walkinDate)
+{
+	var retDataSet;
+
+	if (walkinDate)
+	{
+		retDataSet = -1;
+
+		var obj = db.tblWalkin
+		var objKeys = Object.keys(obj);
+		var numKeys = objKeys.length;
+		for (var i=0; i<numKeys; i++)
+		{
+			if (obj[objKeys[i]].Date === walkinDate)
+			{
+				JSON.parse(JSON.stringify(walkinTemplate))
+				retDataSet = obj[objKeys[i]];
+				// return retDataSet
+			}
+		}
+		if (retDataSet === -1)
+		{
+			retDataSet = 0;
+		}
+		
+	}
+	else
+	{
+		retDataSet = 0;
+	}
+
+	return retDataSet;
+
+}
+
+
+function insertIntoSlotDetails(ID, WalkinID, StartTime, EndTime, Capacity, Remaining, Name)
+{
+		var slotDetails = JSON.parse(JSON.stringify(slotDetailsTemplate));
+		slotDetails.ID = ID;
+		slotDetails.WalkinID = WalkinID;
+		slotDetails.StartTime = StartTime;
+		slotDetails.EndTime = EndTime;
+		slotDetails.Capacity = Capacity;
+		slotDetails.Remaining = Remaining;
+		slotDetails.Name = Name;
+
+		db.tblSlotDetails[slotDetails.ID] = slotDetails;
+}
 
 function saveMainData()
 {
